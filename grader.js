@@ -26,6 +26,23 @@ var program = require('commander');
 var cheerio = require('cheerio');
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
+var URL_DEFAULT = "http://whispering-river-4931.herokuapp.com/";
+
+
+var sys = require('util');
+var rest = require('./node_modules/restler/lib/restler');
+
+var getFileFromUrl = function(url) {
+	rest.get(url).on('complete', function(result) {
+	  if (result instanceof Error) {
+	    sys.puts('Error: ' + result.message);
+	    this.retry(5000); // try again after 5 sec
+	  } else {
+//	    console.log(result);
+	    fs.writeFileSync('urlFile.html', result);
+	  }
+	});
+};
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
@@ -65,10 +82,14 @@ if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+	.option('-u, --url <url>', 'URL', URL_DEFAULT)
         .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
+    getFileFromUrl(program.url); 
+    
+    var checkJson = checkHtmlFile('urlFile.html', program.checks);
     var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+    //console.log(outJson);
+   fs.writeFileSync('out.json',outJson);
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
